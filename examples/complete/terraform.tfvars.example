@@ -1,0 +1,21 @@
+  aws_region   = "us-east-2"
+  cluster_name = "konvu-production"
+  backend_url  = "https://sensors.konvu.com"
+
+  cluster_admin_role_arns = [
+    "arn:aws:iam::YOUR_ACCOUNT_ID:role/YourAdminRole",
+  ]
+
+  deploy_kubernetes_resources = false
+
+  company_token_secret_name = "konvu-company-token"
+  github_token_secret_name  = "konvu-github-token"
+  openai_key_secret_name    = "konvu-openai-key"
+
+  resource_quota_preset = "medium"
+
+  tags = {
+    Environment = "production"
+    ManagedBy   = "terraform"
+    Purpose     = "konvu-analysis"
+  }
