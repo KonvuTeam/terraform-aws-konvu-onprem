@@ -26,7 +26,7 @@ resource "aws_vpc" "main" {
 
   tags = merge(
     {
-      Name = "${var.cluster_name}-vpc"
+      Name                                        = "${var.cluster_name}-vpc"
       "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     },
     var.tags

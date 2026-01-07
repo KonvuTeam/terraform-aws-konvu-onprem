@@ -15,7 +15,7 @@ resource "aws_eks_cluster" "main" {
   }
 
   access_config {
-    authentication_mode = "CONFIG_MAP"
+    authentication_mode                         = "CONFIG_MAP"
     bootstrap_cluster_creator_admin_permissions = true
   }
 
@@ -74,7 +74,7 @@ resource "kubernetes_config_map_v1" "aws_auth" {
 
   depends_on = [
     aws_eks_cluster.main,
-    aws_eks_node_group.system,  # Wait for node group to exist
+    aws_eks_node_group.system, # Wait for node group to exist
   ]
 }
 
@@ -113,7 +113,7 @@ resource "aws_eks_node_group" "system" {
   subnet_ids      = aws_subnet.private[*].id
 
   instance_types = [var.system_node_instance_type]
-  capacity_type  = "ON_DEMAND"  # Use On-Demand for reliability of system pods
+  capacity_type  = "ON_DEMAND" # Use On-Demand for reliability of system pods
 
   scaling_config {
     desired_size = var.system_node_count
@@ -145,8 +145,8 @@ resource "aws_eks_node_group" "system" {
 
   tags = merge(
     {
-      Name                            = "${var.cluster_name}-system-node-group"
-      "karpenter.sh/discovery"        = var.cluster_name
+      Name                     = "${var.cluster_name}-system-node-group"
+      "karpenter.sh/discovery" = var.cluster_name
     },
     var.tags
   )
@@ -163,7 +163,7 @@ resource "aws_eks_addon" "coredns" {
   service_account_role_arn = null
 
   depends_on = [
-    aws_eks_node_group.system,  # Wait for managed nodes to exist before installing CoreDNS
+    aws_eks_node_group.system, # Wait for managed nodes to exist before installing CoreDNS
   ]
 }
 
@@ -405,6 +405,7 @@ resource "aws_iam_role" "controller_service_account" {
 }
 
 ## IAM Policy for Konvu Controller to Access Secrets Manager
+## Controller only needs company token and OpenAI key (not git credentials)
 data "aws_iam_policy_document" "controller_secrets_policy" {
   statement {
     effect = "Allow"
@@ -414,7 +415,6 @@ data "aws_iam_policy_document" "controller_secrets_policy" {
     ]
     resources = [
       "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.company_token_secret_name}*",
-      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.github_token_secret_name}*",
       "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_key_secret_name}*",
     ]
   }
@@ -436,6 +436,71 @@ resource "aws_iam_policy" "controller_secrets_access" {
 resource "aws_iam_role_policy_attachment" "controller_secrets_access" {
   role       = aws_iam_role.controller_service_account.name
   policy_arn = aws_iam_policy.controller_secrets_access.arn
+}
+
+## IAM Role for Konvu Broker Service Account (IRSA)
+## Allows broker to access AWS Secrets Manager for GitHub App credentials
+resource "aws_iam_role" "broker_service_account" {
+  name = "${var.cluster_name}-konvu-broker-sa"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = local.oidc_provider_arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "${local.oidc_provider_url}:sub" = "system:serviceaccount:konvu-broker:konvu-broker"
+            "${local.oidc_provider_url}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(
+    {
+      Name = "${var.cluster_name}-konvu-broker-sa"
+    },
+    var.tags
+  )
+}
+
+## IAM Policy for Konvu Broker to Access Secrets Manager
+data "aws_iam_policy_document" "broker_secrets_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret"
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.company_token_secret_name}*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.github_app_credentials_secret_name}*",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "broker_secrets_access" {
+  name        = "${var.cluster_name}-konvu-broker-secrets"
+  description = "Policy for konvu-broker to access AWS Secrets Manager"
+  policy      = data.aws_iam_policy_document.broker_secrets_policy.json
+
+  tags = merge(
+    {
+      Name = "${var.cluster_name}-konvu-broker-secrets"
+    },
+    var.tags
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "broker_secrets_access" {
+  role       = aws_iam_role.broker_service_account.name
+  policy_arn = aws_iam_policy.broker_secrets_access.arn
 }
 
 # NOTE: Kubernetes and Helm providers must be configured in the calling module

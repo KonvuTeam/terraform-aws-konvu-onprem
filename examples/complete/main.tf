@@ -67,9 +67,9 @@
     vpc_cidr           = var.vpc_cidr
     availability_zones = var.availability_zones
 
-    company_token_secret_name = var.company_token_secret_name
-    github_token_secret_name  = var.github_token_secret_name
-    openai_key_secret_name    = var.openai_key_secret_name
+    company_token_secret_name       = var.company_token_secret_name
+    github_app_credentials_secret_name = var.github_app_credentials_secret_name
+    openai_key_secret_name          = var.openai_key_secret_name
 
     resource_quota_preset = var.resource_quota_preset
     tags                  = var.tags
