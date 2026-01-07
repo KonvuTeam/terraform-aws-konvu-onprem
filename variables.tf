@@ -105,8 +105,8 @@ variable "company_token_secret_name" {
   type        = string
 }
 
-variable "github_token_secret_name" {
-  description = "Name of AWS Secrets Manager secret containing the GitHub token for private repositories"
+variable "github_app_credentials_secret_name" {
+  description = "Name of AWS Secrets Manager secret containing GitHub App credentials (JSON with appId, installationId, privateKey) for broker repository syncing"
   type        = string
 }
 

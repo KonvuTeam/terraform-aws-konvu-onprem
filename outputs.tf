@@ -194,3 +194,20 @@ output "controller_namespace" {
   description = "Namespace where konvu-controller is deployed (null if deploy_kubernetes_resources=false)"
   value       = var.deploy_kubernetes_resources ? kubernetes_namespace.konvu_controller[0].metadata[0].name : null
 }
+
+## Konvu Broker Service Account Outputs
+output "broker_service_account_role_arn" {
+  description = "ARN of the IAM role for konvu-broker service account"
+  value       = aws_iam_role.broker_service_account.arn
+}
+
+output "broker_service_account_role_name" {
+  description = "Name of the IAM role for konvu-broker service account"
+  value       = aws_iam_role.broker_service_account.name
+}
+
+## Konvu Broker Deployment Outputs
+output "broker_namespace" {
+  description = "Namespace where konvu-broker can be deployed (null if deploy_kubernetes_resources=false)"
+  value       = var.deploy_kubernetes_resources ? kubernetes_namespace.konvu_broker[0].metadata[0].name : null
+}
