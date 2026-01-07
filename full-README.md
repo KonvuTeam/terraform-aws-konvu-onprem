@@ -213,7 +213,7 @@ data "aws_eks_cluster_auth" "main" {
 }
 
 module "konvu_onprem" {
-  source = "git::https://github.com/KonvuTeam/terraform-aws-konvu-onprem.git?ref=v1.0.0"
+  source = "git::https://github.com/KonvuTeam/terraform-aws-konvu-onprem.git?ref=v2.0.0"
 
   # Pass provider configurations
   providers = {
@@ -489,7 +489,7 @@ Always pin to a specific version tag (not `main` branch):
 
 ```hcl
 # ✅ Good: Explicit version pinning
-source = "git::https://github.com/KonvuTeam/terraform-aws-konvu-onprem.git?ref=v1.0.0"
+source = "git::https://github.com/KonvuTeam/terraform-aws-konvu-onprem.git?ref=v2.0.0"
 
 # ❌ Avoid: Using branch (unpredictable)
 source = "git::https://github.com/KonvuTeam/terraform-aws-konvu-onprem.git?ref=main"
