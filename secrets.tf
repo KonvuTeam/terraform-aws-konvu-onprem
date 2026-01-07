@@ -185,6 +185,7 @@ resource "kubernetes_manifest" "broker_secret_store" {
             jwt:
               serviceAccountRef:
                 name: external-secrets
+                namespace: konvu-controller
   YAML
   )
 

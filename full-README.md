@@ -234,9 +234,9 @@ module "konvu_onprem" {
   availability_zones = []
 
   # AWS Secrets Manager
-  company_token_secret_name = "konvu-company-token"
-  github_token_secret_name  = "konvu-github-token"
-  openai_key_secret_name    = "konvu-openai-key"
+  company_token_secret_name          = "konvu-company-token"
+  github_app_credentials_secret_name = "konvu-github-app-credentials"
+  openai_key_secret_name             = "konvu-openai-key"
 
   # Resource Sizing
   # Options: "small", "medium", "large"
@@ -348,7 +348,7 @@ kubectl get externalsecrets -n konvu-controller
 # All should show STATUS: SecretSynced
 
 kubectl get secrets -n konvu-controller
-# Should show: konvu-company-token, konvu-github-token, konvu-openai-key
+# Should show: konvu-company-token, konvu-ai-credentials
 ```
 
 ### 6. Deploy Konvu Controller (Separate Step)
@@ -519,7 +519,7 @@ Konvu commits to:
 | `cluster_name` | Name of the EKS cluster | `"konvu-onprem"` |
 | `backend_url` | Konvu backend URL | `"https://sensors.konvu.com"` |
 | `company_token_secret_name` | AWS Secrets Manager secret name for company token | `"konvu-company-token"` |
-| `github_token_secret_name` | AWS Secrets Manager secret name for GitHub token | `"konvu-github-token"` |
+| `github_app_credentials_secret_name` | AWS Secrets Manager secret name for GitHub App credentials (JSON) | `"konvu-github-app-credentials"` |
 | `openai_key_secret_name` | AWS Secrets Manager secret name for OpenAI key | `"konvu-openai-key"` |
 
 ### Optional Variables
@@ -546,6 +546,9 @@ See [variables.tf](./variables.tf) for complete list and documentation.
 | `karpenter_node_iam_role_arn` | ARN of IAM role used by Karpenter nodes |
 | `controller_service_account_role_arn` | ARN of IAM role for konvu-controller |
 | `controller_namespace` | Kubernetes namespace prepared for controller |
+| `broker_service_account_role_arn` | ARN of IAM role for konvu-broker service account |
+| `broker_service_account_role_name` | Name of IAM role for konvu-broker service account |
+| `broker_namespace` | Kubernetes namespace prepared for broker |
 
 See [outputs.tf](./outputs.tf) for complete list.
 
@@ -640,7 +643,7 @@ terraform apply
 ```bash
 # Verify secrets exist in AWS
 aws secretsmanager get-secret-value --secret-id konvu-company-token --region us-east-2
-aws secretsmanager get-secret-value --secret-id konvu-github-token --region us-east-2
+aws secretsmanager get-secret-value --secret-id konvu-github-app-credentials --region us-east-2
 aws secretsmanager get-secret-value --secret-id konvu-openai-key --region us-east-2
 
 # Check External Secrets Operator logs
