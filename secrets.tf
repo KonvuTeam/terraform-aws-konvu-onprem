@@ -150,7 +150,7 @@ resource "helm_release" "broker_external_secrets" {
 
   set {
     name  = "installCRDs"
-    value = "false" # CRDs already installed by controller External Secrets
+    value = "true" # Install CRDs for broker independence (safe to install multiple times)
   }
 
   set {
@@ -161,7 +161,6 @@ resource "helm_release" "broker_external_secrets" {
   depends_on = [
     aws_eks_cluster.main,
     helm_release.karpenter[0],
-    helm_release.external_secrets[0], # Wait for controller External Secrets to install CRDs
     kubernetes_namespace.konvu_broker[0],
   ]
 }
