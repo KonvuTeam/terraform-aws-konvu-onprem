@@ -133,12 +133,12 @@ resource "aws_iam_role_policy_attachment" "broker_external_secrets_access" {
   policy_arn = aws_iam_policy.broker_external_secrets_access.arn
 }
 
-## External Secrets Operator Helm Release
+## External Secrets Operator Helm Release for Controller
 ## Deployed in Stage 2 in konvu-controller namespace (controlled by deploy_kubernetes_resources variable)
-resource "helm_release" "external_secrets" {
+resource "helm_release" "controller_external_secrets" {
   count = var.deploy_kubernetes_resources ? 1 : 0
 
-  name       = "external-secrets"
+  name       = "controller-external-secrets"
   repository = "https://charts.external-secrets.io"
   chart      = "external-secrets"
   version    = "0.20.4" # Using latest 0.x stable version
@@ -169,7 +169,7 @@ resource "helm_release" "external_secrets" {
 resource "helm_release" "broker_external_secrets" {
   count = var.deploy_kubernetes_resources ? 1 : 0
 
-  name       = "external-secrets"
+  name       = "broker-external-secrets"
   repository = "https://charts.external-secrets.io"
   chart      = "external-secrets"
   version    = "0.20.4" # Using latest 0.x stable version
@@ -257,7 +257,7 @@ resource "kubernetes_manifest" "secret_store" {
   )
 
   depends_on = [
-    helm_release.external_secrets[0],
+    helm_release.controller_external_secrets[0],
     kubernetes_namespace.konvu_controller[0],
   ]
 }
