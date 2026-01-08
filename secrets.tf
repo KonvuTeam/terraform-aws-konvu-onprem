@@ -63,8 +63,44 @@ resource "aws_iam_role" "broker_external_secrets_operator" {
   )
 }
 
-## IAM Policy for External Secrets Operator to access Secrets Manager
-data "aws_iam_policy_document" "external_secrets_policy" {
+## IAM Policy for Controller External Secrets Operator
+## Grants access to: company token, OpenAI key
+data "aws_iam_policy_document" "controller_external_secrets_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:ListSecrets"
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.company_token_secret_name}*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_key_secret_name}*",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "controller_external_secrets_access" {
+  name        = "${var.cluster_name}-controller-external-secrets-access"
+  description = "Policy for controller External Secrets Operator to access AWS Secrets Manager"
+  policy      = data.aws_iam_policy_document.controller_external_secrets_policy.json
+
+  tags = merge(
+    {
+      Name = "${var.cluster_name}-controller-external-secrets-access"
+    },
+    var.tags
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "controller_external_secrets_access" {
+  role       = aws_iam_role.external_secrets_operator.name
+  policy_arn = aws_iam_policy.controller_external_secrets_access.arn
+}
+
+## IAM Policy for Broker External Secrets Operator
+## Grants access to: company token, GitHub App credentials
+data "aws_iam_policy_document" "broker_external_secrets_policy" {
   statement {
     effect = "Allow"
     actions = [
@@ -75,32 +111,26 @@ data "aws_iam_policy_document" "external_secrets_policy" {
     resources = [
       "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.company_token_secret_name}*",
       "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.github_app_credentials_secret_name}*",
-      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_key_secret_name}*",
     ]
   }
 }
 
-resource "aws_iam_policy" "external_secrets_access" {
-  name        = "${var.cluster_name}-external-secrets-access"
-  description = "Policy for External Secrets Operator to access AWS Secrets Manager"
-  policy      = data.aws_iam_policy_document.external_secrets_policy.json
+resource "aws_iam_policy" "broker_external_secrets_access" {
+  name        = "${var.cluster_name}-broker-external-secrets-access"
+  description = "Policy for broker External Secrets Operator to access AWS Secrets Manager"
+  policy      = data.aws_iam_policy_document.broker_external_secrets_policy.json
 
   tags = merge(
     {
-      Name = "${var.cluster_name}-external-secrets-access"
+      Name = "${var.cluster_name}-broker-external-secrets-access"
     },
     var.tags
   )
 }
 
-resource "aws_iam_role_policy_attachment" "external_secrets_access" {
-  role       = aws_iam_role.external_secrets_operator.name
-  policy_arn = aws_iam_policy.external_secrets_access.arn
-}
-
 resource "aws_iam_role_policy_attachment" "broker_external_secrets_access" {
   role       = aws_iam_role.broker_external_secrets_operator.name
-  policy_arn = aws_iam_policy.external_secrets_access.arn
+  policy_arn = aws_iam_policy.broker_external_secrets_access.arn
 }
 
 ## External Secrets Operator Helm Release
