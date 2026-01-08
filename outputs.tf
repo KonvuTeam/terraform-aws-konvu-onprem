@@ -180,13 +180,23 @@ output "controller_service_account_role_name" {
 
 ## External Secrets Operator Outputs
 output "external_secrets_operator_role_arn" {
-  description = "ARN of the IAM role for External Secrets Operator"
+  description = "ARN of the IAM role for External Secrets Operator (controller)"
   value       = aws_iam_role.external_secrets_operator.arn
 }
 
 output "external_secrets_operator_role_name" {
-  description = "Name of the IAM role for External Secrets Operator"
+  description = "Name of the IAM role for External Secrets Operator (controller)"
   value       = aws_iam_role.external_secrets_operator.name
+}
+
+output "broker_external_secrets_operator_role_arn" {
+  description = "ARN of the IAM role for broker External Secrets Operator"
+  value       = aws_iam_role.broker_external_secrets_operator.arn
+}
+
+output "broker_external_secrets_operator_role_name" {
+  description = "Name of the IAM role for broker External Secrets Operator"
+  value       = aws_iam_role.broker_external_secrets_operator.name
 }
 
 ## Konvu Controller Deployment Outputs

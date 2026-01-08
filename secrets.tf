@@ -1,7 +1,7 @@
 # Konvu On-Prem Controller Module - Secrets Management
 # Uses External Secrets Operator to sync AWS Secrets Manager secrets to Kubernetes
 
-## External Secrets Operator IAM Role (IRSA)
+## External Secrets Operator IAM Role for Controller (IRSA)
 resource "aws_iam_role" "external_secrets_operator" {
   name = "${var.cluster_name}-external-secrets-operator"
 
@@ -32,8 +32,75 @@ resource "aws_iam_role" "external_secrets_operator" {
   )
 }
 
-## IAM Policy for External Secrets Operator to access Secrets Manager
-data "aws_iam_policy_document" "external_secrets_policy" {
+## External Secrets Operator IAM Role for Broker (IRSA)
+resource "aws_iam_role" "broker_external_secrets_operator" {
+  name = "${var.cluster_name}-broker-external-secrets-operator"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = local.oidc_provider_arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "${local.oidc_provider_url}:sub" = "system:serviceaccount:konvu-broker:external-secrets"
+            "${local.oidc_provider_url}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(
+    {
+      Name = "${var.cluster_name}-broker-external-secrets-operator"
+    },
+    var.tags
+  )
+}
+
+## IAM Policy for Controller External Secrets Operator
+## Grants access to: company token, OpenAI key
+data "aws_iam_policy_document" "controller_external_secrets_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:ListSecrets"
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.company_token_secret_name}*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_key_secret_name}*",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "controller_external_secrets_access" {
+  name        = "${var.cluster_name}-controller-external-secrets-access"
+  description = "Policy for controller External Secrets Operator to access AWS Secrets Manager"
+  policy      = data.aws_iam_policy_document.controller_external_secrets_policy.json
+
+  tags = merge(
+    {
+      Name = "${var.cluster_name}-controller-external-secrets-access"
+    },
+    var.tags
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "controller_external_secrets_access" {
+  role       = aws_iam_role.external_secrets_operator.name
+  policy_arn = aws_iam_policy.controller_external_secrets_access.arn
+}
+
+## IAM Policy for Broker External Secrets Operator
+## Grants access to: company token, GitHub App credentials
+data "aws_iam_policy_document" "broker_external_secrets_policy" {
   statement {
     effect = "Allow"
     actions = [
@@ -44,27 +111,26 @@ data "aws_iam_policy_document" "external_secrets_policy" {
     resources = [
       "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.company_token_secret_name}*",
       "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.github_app_credentials_secret_name}*",
-      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.openai_key_secret_name}*",
     ]
   }
 }
 
-resource "aws_iam_policy" "external_secrets_access" {
-  name        = "${var.cluster_name}-external-secrets-access"
-  description = "Policy for External Secrets Operator to access AWS Secrets Manager"
-  policy      = data.aws_iam_policy_document.external_secrets_policy.json
+resource "aws_iam_policy" "broker_external_secrets_access" {
+  name        = "${var.cluster_name}-broker-external-secrets-access"
+  description = "Policy for broker External Secrets Operator to access AWS Secrets Manager"
+  policy      = data.aws_iam_policy_document.broker_external_secrets_policy.json
 
   tags = merge(
     {
-      Name = "${var.cluster_name}-external-secrets-access"
+      Name = "${var.cluster_name}-broker-external-secrets-access"
     },
     var.tags
   )
 }
 
-resource "aws_iam_role_policy_attachment" "external_secrets_access" {
-  role       = aws_iam_role.external_secrets_operator.name
-  policy_arn = aws_iam_policy.external_secrets_access.arn
+resource "aws_iam_role_policy_attachment" "broker_external_secrets_access" {
+  role       = aws_iam_role.broker_external_secrets_operator.name
+  policy_arn = aws_iam_policy.broker_external_secrets_access.arn
 }
 
 ## External Secrets Operator Helm Release
@@ -95,6 +161,37 @@ resource "helm_release" "external_secrets" {
     aws_eks_cluster.main,
     helm_release.karpenter[0],
     kubernetes_namespace.konvu_controller[0],
+  ]
+}
+
+## External Secrets Operator Helm Release for Broker
+## Deployed in Stage 2 in konvu-broker namespace (controlled by deploy_kubernetes_resources variable)
+resource "helm_release" "broker_external_secrets" {
+  count = var.deploy_kubernetes_resources ? 1 : 0
+
+  name       = "external-secrets"
+  repository = "https://charts.external-secrets.io"
+  chart      = "external-secrets"
+  version    = "0.20.4" # Using latest 0.x stable version
+  namespace  = kubernetes_namespace.konvu_broker[0].metadata[0].name
+
+  create_namespace = false # Namespace already created
+  wait             = true
+
+  set {
+    name  = "installCRDs"
+    value = "true" # Install CRDs for broker independence (safe to install multiple times)
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.broker_external_secrets_operator.arn
+  }
+
+  depends_on = [
+    aws_eks_cluster.main,
+    helm_release.karpenter[0],
+    kubernetes_namespace.konvu_broker[0],
   ]
 }
 
@@ -185,12 +282,11 @@ resource "kubernetes_manifest" "broker_secret_store" {
             jwt:
               serviceAccountRef:
                 name: external-secrets
-                namespace: konvu-controller
   YAML
   )
 
   depends_on = [
-    helm_release.external_secrets[0],
+    helm_release.broker_external_secrets[0],
     kubernetes_namespace.konvu_broker[0],
   ]
 }
