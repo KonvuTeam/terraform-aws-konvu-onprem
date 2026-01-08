@@ -115,6 +115,13 @@ variable "openai_key_secret_name" {
   type        = string
 }
 
+## Broker Configuration
+variable "broker_install_crds" {
+  description = "Install External Secrets CRDs in broker namespace. Set to false when controller and broker are in the same cluster (CRDs already installed by controller). Set to true for multi-cluster deployments where broker is in a separate cluster."
+  type        = bool
+  default     = false
+}
+
 ## Additional Configuration
 variable "tags" {
   description = "Additional tags to apply to all resources"

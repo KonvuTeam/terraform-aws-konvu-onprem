@@ -180,7 +180,7 @@ resource "helm_release" "broker_external_secrets" {
 
   set {
     name  = "installCRDs"
-    value = "true" # Install CRDs for broker independence (safe to install multiple times)
+    value = var.broker_install_crds ? "true" : "false"
   }
 
   set {
