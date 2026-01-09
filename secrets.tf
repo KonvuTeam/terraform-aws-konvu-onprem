@@ -3,7 +3,7 @@
 
 ## External Secrets Operator IAM Role for Controller (IRSA)
 resource "aws_iam_role" "external_secrets_operator" {
-  name = "${var.cluster_name}-external-secrets-operator"
+  name = "${var.cluster_name}-controller-external-secrets-operator"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -26,7 +26,7 @@ resource "aws_iam_role" "external_secrets_operator" {
 
   tags = merge(
     {
-      Name = "${var.cluster_name}-external-secrets-operator"
+      Name = "${var.cluster_name}-controller-external-secrets-operator"
     },
     var.tags
   )
@@ -153,6 +153,11 @@ resource "helm_release" "controller_external_secrets" {
   }
 
   set {
+    name  = "serviceAccount.name"
+    value = "external-secrets"
+  }
+
+  set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = aws_iam_role.external_secrets_operator.arn
   }
@@ -181,6 +186,11 @@ resource "helm_release" "broker_external_secrets" {
   set {
     name  = "installCRDs"
     value = var.broker_install_crds ? "true" : "false"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "external-secrets"
   }
 
   set {
