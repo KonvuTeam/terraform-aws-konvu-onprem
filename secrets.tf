@@ -398,7 +398,7 @@ resource "kubernetes_manifest" "broker_github_app_secret" {
             rewrite:
               - regexp:
                   source: "(.*)"
-                  target: "github-app-$$1"
+                  target: "github-app-$1"
   YAML
   )
 
