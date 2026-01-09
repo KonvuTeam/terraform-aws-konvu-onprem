@@ -395,10 +395,10 @@ resource "kubernetes_manifest" "broker_github_app_secret" {
       dataFrom:
         - extract:
             key: ${var.github_app_credentials_secret_name}
-            rewrite:
-              - regexp:
-                  source: "(.*)"
-                  target: "github-app-$1"
+          rewrite:
+            - regexp:
+                source: "(.*)"
+                target: "github-app-$1"
   YAML
   )
 
