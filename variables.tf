@@ -128,3 +128,10 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+## Karpenter Spot Instance Configuration
+variable "enable_spot_instances" {
+  description = "Enable spot instances in Karpenter node provisioning. Creates required service-linked role."
+  type        = bool
+  default     = true
+}
