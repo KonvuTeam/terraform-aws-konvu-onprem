@@ -128,3 +128,10 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+## Karpenter Spot Instance Configuration
+variable "enable_spot_service_linked_role" {
+  description = "Create the EC2 Spot service-linked role required for Karpenter to provision spot instances. Set to false if the role already exists in your AWS account. Note: This only creates the IAM role - NodePool configuration separately controls whether spot capacity is used."
+  type        = bool
+  default     = true
+}
