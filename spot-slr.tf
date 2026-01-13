@@ -13,6 +13,14 @@ resource "aws_iam_service_linked_role" "spot" {
   aws_service_name = "spot.amazonaws.com"
   description      = "Service-linked role for EC2 Spot instances (required by Karpenter)"
 
+  # Prevent Terraform from detecting drift on AWS-managed attributes
+  # AWS may update policies or role configuration - we don't want to recreate the role
+  lifecycle {
+    ignore_changes = [
+      description,  # AWS may update this
+    ]
+  }
+
   tags = merge(
     {
       Name = "EC2SpotServiceLinkedRole"
