@@ -130,8 +130,8 @@ variable "tags" {
 }
 
 ## Karpenter Spot Instance Configuration
-variable "enable_spot_instances" {
-  description = "Enable spot instances in Karpenter node provisioning. Creates required service-linked role."
+variable "enable_spot_service_linked_role" {
+  description = "Create the EC2 Spot service-linked role required for Karpenter to provision spot instances. Set to false if the role already exists in your AWS account. Note: This only creates the IAM role - NodePool configuration separately controls whether spot capacity is used."
   type        = bool
   default     = true
 }
