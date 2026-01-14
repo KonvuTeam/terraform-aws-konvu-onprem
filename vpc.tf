@@ -59,7 +59,8 @@ resource "aws_subnet" "public" {
       Name                                        = "${var.cluster_name}-public-${local.azs[count.index]}"
       "kubernetes.io/role/elb"                    = "1"
       "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-      "karpenter.sh/discovery"                    = var.cluster_name
+      # NOTE: karpenter.sh/discovery tag intentionally NOT set on public subnets
+      # Karpenter should only provision nodes in private subnets with NAT gateway access
     },
     var.tags
   )
