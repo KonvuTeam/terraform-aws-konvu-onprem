@@ -135,3 +135,10 @@ variable "enable_spot_service_linked_role" {
   type        = bool
   default     = true
 }
+
+## Karpenter CPU Limit Configuration
+variable "karpenter_cpu_limit" {
+  description = "Maximum number of CPU cores that Karpenter can provision across all nodes. Controls the NodePool spec.limits.cpu value."
+  type        = number
+  default     = 100
+}

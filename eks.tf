@@ -362,7 +362,7 @@ resource "kubernetes_manifest" "karpenter_node_pool" {
               operator: In
               values: ["amd64"]
       limits:
-        cpu: 100
+        cpu: ${var.karpenter_cpu_limit}
       disruption:
         consolidationPolicy: WhenEmptyOrUnderutilized
         consolidateAfter: 3m
