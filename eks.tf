@@ -369,6 +369,10 @@ resource "kubernetes_manifest" "karpenter_node_pool" {
   YAML
   )
 
+  field_manager {
+    force_conflicts = true
+  }
+
   depends_on = [
     kubernetes_manifest.karpenter_node_class[0],
   ]
