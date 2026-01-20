@@ -162,6 +162,69 @@ resource "helm_release" "controller_external_secrets" {
     value = aws_iam_role.external_secrets_operator.arn
   }
 
+  # Resource limits/requests for main controller
+  set {
+    name  = "resources.requests.cpu"
+    value = "100m"
+  }
+
+  set {
+    name  = "resources.requests.memory"
+    value = "256Mi"
+  }
+
+  set {
+    name  = "resources.limits.cpu"
+    value = "500m"
+  }
+
+  set {
+    name  = "resources.limits.memory"
+    value = "512Mi"
+  }
+
+  # Resource limits/requests for cert-controller
+  set {
+    name  = "certController.resources.requests.cpu"
+    value = "50m"
+  }
+
+  set {
+    name  = "certController.resources.requests.memory"
+    value = "128Mi"
+  }
+
+  set {
+    name  = "certController.resources.limits.cpu"
+    value = "200m"
+  }
+
+  set {
+    name  = "certController.resources.limits.memory"
+    value = "256Mi"
+  }
+
+  # Resource limits/requests for webhook
+  set {
+    name  = "webhook.resources.requests.cpu"
+    value = "50m"
+  }
+
+  set {
+    name  = "webhook.resources.requests.memory"
+    value = "128Mi"
+  }
+
+  set {
+    name  = "webhook.resources.limits.cpu"
+    value = "200m"
+  }
+
+  set {
+    name  = "webhook.resources.limits.memory"
+    value = "256Mi"
+  }
+
   depends_on = [
     aws_eks_cluster.main,
     helm_release.karpenter[0],
