@@ -261,6 +261,17 @@ resource "helm_release" "broker_external_secrets" {
     value = aws_iam_role.broker_external_secrets_operator.arn
   }
 
+  # Disable cluster-wide components (already installed by controller ESO)
+  set {
+    name  = "webhook.create"
+    value = "false"
+  }
+
+  set {
+    name  = "certController.create"
+    value = "false"
+  }
+
   depends_on = [
     aws_eks_cluster.main,
     helm_release.karpenter[0],
