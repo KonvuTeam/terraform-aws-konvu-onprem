@@ -259,7 +259,7 @@ resource "helm_release" "karpenter_crds" {
   name                = "karpenter-crds"
   repository          = "oci://public.ecr.aws/karpenter"
   chart               = "karpenter-crd"
-  version             = "1.4.0"
+  version             = "1.6.6"
   namespace           = "kube-system"
   create_namespace    = false
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
@@ -277,7 +277,7 @@ resource "helm_release" "karpenter" {
   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
   repository_password = data.aws_ecrpublic_authorization_token.token.password
   chart               = "karpenter"
-  version             = "1.4.0"
+  version             = "1.6.6"
   wait                = false
 
   values = [
