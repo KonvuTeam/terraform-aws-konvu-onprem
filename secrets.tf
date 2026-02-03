@@ -265,6 +265,7 @@ resource "helm_release" "broker_external_secrets" {
     aws_eks_cluster.main,
     helm_release.karpenter[0],
     kubernetes_namespace.konvu_broker[0],
+    helm_release.controller_external_secrets[0], # Wait for CRDs to be installed
   ]
 }
 
